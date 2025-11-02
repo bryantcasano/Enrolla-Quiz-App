@@ -28,13 +28,8 @@ export default function QuizPage() {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz`)
         const data = (await res.json()) as { questions: Question[] }
-        const randomSeed = Math.floor(Math.random() * 10000)
-        const shuffledQuestions = shuffleArray(data.questions, randomSeed).map((q) => {
-          if (q.choices) {
-            return { ...q, choices: shuffleArray(q.choices, randomSeed + parseInt(q.id)) }
-          }
-          return q
-        })
+        const shuffledQuestions = shuffleArray(data.questions)
+
         setQuestions(shuffledQuestions)
         setLoading(false)
       } catch {
@@ -78,7 +73,11 @@ export default function QuizPage() {
 
   if (loading) return <p className="text-center mt-10">Loading quiz...</p>
   if (error) return <p className="text-center text-red-500">{error}</p>
-  if (result)
+  if (result) {
+    const orderedResults = questions.map((q) =>
+      result.results.find((r: any) => r.id === q.id)
+    );
+
     return (
       <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow text-black">
         <h2 className="text-2xl font-bold mb-4">Results</h2>
@@ -86,12 +85,12 @@ export default function QuizPage() {
           Score: {result.score}/{result.total}
         </p>
         <ul className="space-y-2">
-          {result.results.map((r: any) => (
+          {orderedResults.map((r: any, i: number) => (
             <li
               key={r.id}
               className={`p-2 rounded ${r.correct ? 'bg-green-100' : 'bg-red-100'}`}
             >
-              Question {r.id}: {r.correct ? '✅ Correct' : '❌ Incorrect'}
+              Question {(i+1)}: {r.correct ? '✅ Correct' : '❌ Incorrect'}
             </li>
           ))}
         </ul>
@@ -103,6 +102,7 @@ export default function QuizPage() {
         </button>
       </div>
     )
+  }
 
   // paginate questions
   const start = page * QUESTIONS_PER_PAGE
